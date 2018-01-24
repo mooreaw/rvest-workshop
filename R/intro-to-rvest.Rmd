@@ -1,0 +1,200 @@
+---
+title: "A brief introduction to web scraping using `rvest`"
+date: "`r format(Sys.Date(), '%m-%d-%Y')`"
+output: html_document
+---
+
+```{r opts, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+## Outline
+
+- *What's our goal?*
+    - Basic introduction to web scraping
+    - Just enough of the R language to grasp the basics
+    - Be able to follow along with a program designed to get data from the internet
+
+- *What is web scraping?*
+    - good practice, robots.txt
+    - HTML elements, XPaths, looking at a website's 'source'
+
+- *Web scraping in R*
+    - quick overview of the R environment, data types
+    - primary functions used with the `rvest` package
+    
+- *Applied example: gathering job postings from labor.gov*
+
+## What is web scraping?
+
+- Going beyond copy/paste
+
+- Using software to systematically gather data from websites
+    - Copying information posted online for later review/analysis
+    - Can be done manually
+    - Or through an automated process ("crawlers", "bots", "spiders")
+
+- Lots of terms & names for describing the same thing:
+    - "web scraping" or "scraping"
+    - "web harvesting"
+
+## Good practice & responsible scraping
+
+- Read each website's ToS and policies
+    - May not be permissible for you to scrape certain data
+        - copyright laws
+        - trespassing
+        - violation of the computer fraud and abuse act (CFAA)
+    - Can get your IP Address banned
+        - make you sad
+        - make your institution mad
+    - Public data generally okay to gather, but be conscious
+    - Reaching out to web administrators is often a good idea
+- Read each website's robots.txt
+    - Example: https://en.wikipedia.org/robots.txt
+    - How to understand a robots.txt file: https://en.wikipedia.org/wiki/Robots_exclusion_standard
+
+## Using R: packages & workspace
+
+- 'packages' are bundles of code that other people have written for convenient use later
+- they contain functions and data that are meant to be used across different projects
+- start by running the following command in your console:
+    - `install.packages("tidyverse")`
+
+```{r init}
+# install packages once, load packages every session
+# installing *is not the same* as loading 
+# load packages by calling the `library()` function on a package name
+library(tidyverse)
+```
+
+## Using R: data types (1/)
+
+Quick look at how data is stored and represented in R (you can use the `class()` function on an object to find out what it is)
+
+- *vectors* can be thought of single columns of a spreadsheet
+    - most basic type of data
+    - have one dimension: length (how many items in the vector)
+    - only one type of data contained in them
+        - numeric (numbers, either integer values or decimals)
+        - character (text based data)
+        - logical (`TRUE` or `FALSE`)
+        - missing values (represented by `NA` in R)
+        - factor (won't cover in detail, just be aware they exist)
+    - if you try to mix different types, R will try to convert ("coerce") them into a compatible type
+
+- *lists*
+    - a little more advanced
+    - used to store sets of vectors or other forms of data (even lists of lists!)
+    - as many items in a list as you want
+    - each item in the list can be a different type of data
+    - and have different dimensions (rows, lengths, etc.)
+
+- *data frames*
+    - technically a list, but probably feels more familiar
+    - rows and columns (2 dimensions)
+    - we <3 data frames
+
+## Using R: data types (2/)
+
+```{r use-r-2}
+# vectors
+letters[1:12]
+
+# lists
+list(my_letters = letters[1:5], my_numbers = 1:10)
+
+# data frames
+head(mpg)
+```
+
+## Using R: operators (3/)
+
+Operators. One note: `#` marks lines as comments
+
+```{r use-r-3}
+# creating sequences using the colon
+1:5
+
+5:1
+
+# doing math
+3 * 2
+
+1 + 1
+
+3 - 2
+
+4 / 8
+
+4 ^ 2
+
+1:10 - 1 # being fancy
+
+# logical tests
+2 == 2
+
+2 != 4
+
+TRUE & TRUE
+
+TRUE | FALSE
+
+# storing data as variables for later use
+# <- is the *assignment operator*
+x <- 3
+y <- 22
+
+(x * y) + 3
+
+# getting data out of an object
+mpg_cty <- mpg$cty
+```
+
+## Using R: functions (4/)
+
+- Just like in high-school math, functions have a name, and take arguments
+- Arguments go inside parentheses
+
+```{r use-r-4, warning = TRUE}
+mean(mpg_cty) # find an average of a vector of data
+mean(letters) # can't find the average of the alphabet...
+
+table(mpg$class) # the $ operator can be used to access columns in data frames
+
+# ? can be used to pull up help pages about functions, or built-in data
+?mean
+```
+
+## The `rvest` package
+
+We're going to look at the wikipedia entry for the [gini coefficient](https://en.wikipedia.org/wiki/Gini_coefficient) as an example. We'll use the 'inspect' feature from the chrome browser to look at the structure of the page to get an XPath that can be targeted by functions from `rvest`.
+
+```{r rvest-1}
+# load the rvest package that came installed with the `tidyverse` bundle
+library(rvest)
+
+# grab the html from the web
+gini <- read_html("https://en.wikipedia.org/wiki/Gini_coefficient")
+
+# after we've looked at the page's source, we can get the xpath we want
+tabl <- html_nodes(gini, xpath = '//*[@id="mw-content-text"]/div/table[1]')
+
+html_text(tabl)  # a little more work might be needed
+html_table(tabl) # but, this is actually a table, so we can take a shortcut
+```
+
+## More to `rvest`, but these are the main pieces
+
+You can do a lot more to automate processes with `rvest` (like submitting data into forms, or pulling out more complicated information from HTML files), but we won't need to go into too much more detail.
+
+I've gotten most projects done with the following:
+
+- `read_html()`
+- `html_node()` or `html_nodes()`
+- `html_text()` or `html_table()`
+
+## An applied example: getting H-2A postings from the DoL
+
+```{r}
+```
