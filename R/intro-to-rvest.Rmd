@@ -1,5 +1,6 @@
 ---
 title: "A brief introduction to web scraping using `rvest`"
+author: "Andrew Moore"
 date: "`r format(Sys.Date(), '%m-%d-%Y')`"
 output: html_document
 ---
@@ -10,18 +11,18 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 ## Outline
 
-- *What's our goal?*
+- *What are our goals?*
     - Basic introduction to web scraping
     - Just enough of the R language to grasp the basics
     - Be able to follow along with a program designed to get data from the internet
 
 - *What is web scraping?*
-    - good practice, robots.txt
+    - Discuss good practice, robots.txt
     - HTML elements, XPaths, looking at a website's 'source'
 
 - *Web scraping in R*
-    - quick overview of the R environment, data types
-    - primary functions used with the `rvest` package
+    - Give a quick overview of the R environment, data types
+    - Discuss the primary functions used with the `rvest` package
     
 - *Applied example: gathering job postings from labor.gov*
 
@@ -53,8 +54,12 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 - Read each website's robots.txt
     - Example: https://en.wikipedia.org/robots.txt
     - How to understand a robots.txt file: https://en.wikipedia.org/wiki/Robots_exclusion_standard
+    - Not all websites have a robots.txt file, but it's good to check
+        - typically found right at the top of the website's directory: https://www.websitename.com/robots.txt/
 
-## Using R: packages & workspace
+## Using R: packages & workspace (0/4)
+
+Note: I really hope you've installed the most recent version of [R](https://cloud.r-project.org/) & [RStudio](https://www.rstudio.com/products/rstudio/#Desktop) on your computer.
 
 - 'packages' are bundles of code that other people have written for convenient use later
 - they contain functions and data that are meant to be used across different projects
@@ -68,13 +73,14 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 library(tidyverse)
 ```
 
-## Using R: data types (1/)
+## Using R: data types (1/4)
 
 Quick look at how data is stored and represented in R (you can use the `class()` function on an object to find out what it is)
 
-- *vectors* can be thought of single columns of a spreadsheet
+- *vectors*
+    - can be thought of single columns of a spreadsheet
     - most basic type of data
-    - have one dimension: length (how many items in the vector)
+    - one dimensional: length (how many items in the vector)
     - only one type of data contained in them
         - numeric (numbers, either integer values or decimals)
         - character (text based data)
@@ -86,16 +92,16 @@ Quick look at how data is stored and represented in R (you can use the `class()`
 - *lists*
     - a little more advanced
     - used to store sets of vectors or other forms of data (even lists of lists!)
-    - as many items in a list as you want
+    - you can store as many items in a list as you want
     - each item in the list can be a different type of data
     - and have different dimensions (rows, lengths, etc.)
 
 - *data frames*
-    - technically a list, but probably feels more familiar
+    - technically data frames are lists, but they probably feel more familiar
     - rows and columns (2 dimensions)
     - we <3 data frames
 
-## Using R: data types (2/)
+## Using R: data types (2/4)
 
 ```{r use-r-2}
 # vectors
@@ -108,11 +114,11 @@ list(my_letters = letters[1:5], my_numbers = 1:10)
 head(mpg)
 ```
 
-## Using R: operators (3/)
+## Using R: operators (3/4)
 
 Operators. One note: `#` marks lines as comments
 
-```{r use-r-3}
+```{r ops-1}
 # creating sequences using the colon
 1:5
 
@@ -129,14 +135,16 @@ Operators. One note: `#` marks lines as comments
 
 4 ^ 2
 
-1:10 - 1 # being fancy
+1:10 - 1 # you can perform operations over vectors too!
+```
 
+```{r ops-2} 
 # logical tests
 2 == 2
 
 2 != 4
 
-TRUE & TRUE
+TRUE & FALSE
 
 TRUE | FALSE
 
@@ -151,17 +159,19 @@ y <- 22
 mpg_cty <- mpg$cty
 ```
 
-## Using R: functions (4/)
+## Using R: functions (4/4)
 
-- Just like in high-school math, functions have a name, and take arguments
+- Just like we learned in school, functions have *names*, and take *arguments*
 - Arguments go inside parentheses
 
-```{r use-r-4, warning = TRUE}
+```{r functions, warning = TRUE}
 mean(mpg_cty) # find an average of a vector of data
 mean(letters) # can't find the average of the alphabet...
 
 table(mpg$class) # the $ operator can be used to access columns in data frames
+```
 
+```{r eval = FALSE}
 # ? can be used to pull up help pages about functions, or built-in data
 ?mean
 ```
