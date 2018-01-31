@@ -206,5 +206,129 @@ I've gotten most projects done with the following:
 
 ## An applied example: getting H-2A postings from the DoL
 
+We have an example link for Kenzie's project. After using Selectorgadget on the page, we can find out the xpath for the elements we want to extract.
+
 ```{r}
+library(lubridate)
+
+link <- "https://lcr-pjr.doleta.gov/index.cfm?event=ehLCJRExternal.dspJobOrderView&frm=lcjr&task=view_job_order&view=external&lcjr_id=123105"
+
+xpath <- "//p | //h5"
+
+# get the html
+html <- read_html(link)
+
+# get the areas we want
+node <- html_nodes(html, xpath = xpath)
+
+# pull out the text!
+text <- html_text(node)
+
+# let's look at the text
+text[1:10]
+```
+
+Kind of messy! It looks like we have some nonsense information as our first element-- all the spaces and `\t\r\n` stuff. It also looks like the data that is normally organized horizontally on the actual page has been turned into a stack of information. E.g. `"Job Registry Record ID:"` and its associated value, `"123105 "`, should probably be on the same line, but instead they've been split across two. Let's check the bottom of the data to make sure nothing else weird is going on.
+
+```{r}
+tail(text, n = 10)
+```
+
+Okay, we pulled out the whole paragraph of information about the wage rates, which I think was supposed to happen. It also looks like the stuff at the bottom is formatted the same as the stuff at the top (i.e. it's the same configuration, field name followed by the associated value on a new line). This is good, because it means we can pluck it out in a pretty straightforward way.
+
+```{r}
+# drop the first piece
+# do some minor cleaning of the text
+text <- text[-1]
+
+# this gets rid of extra spaces at the front/end of each line
+text <- str_trim(text)
+
+# if a line is blank, let's treat it as missing data
+text[text == ""] <- NA
+
+# we're doing integer division with the %% operator (%% is pronounced 'modulo')
+# example: 5 %% 2
+# the fields are odds
+field <- text[1:length(text) %% 2 == 1]
+
+# the data are evens
+dats  <- text[1:length(text) %% 2 == 0]
+
+# place in a data frame
+df <- data_frame(
+  field = field,
+  dat   = dats
+)
+
+# functions from the stringr package
+# fields end with a colon-- strip those off
+# clean up the spaces/punctuation
+df$field <- df$field %>%
+  str_to_lower() %>%
+  str_replace(":", "") %>%
+  str_replace_all("[[:punct:]]", "") %>%
+  str_replace_all("  ", " ") %>%
+  str_replace_all(" ", "_")
+
+# tall to wide
+# use parse_guess() to turn the all number fields into R's numeric class
+# convert all the dates
+df <- df %>%
+  spread(field, dat) %>%
+  map_df(parse_guess) %>%
+  mutate_at(vars(contains("date")), funs(mdy(.)))
+```
+
+Now we'll take the code we worked through above, and put it into a more regularized function. It'll take two arguments, a URL and the appropriate XPath, as characters.
+
+```{r as a function}
+job_getter <- function(url, xpath) {
+  # get the data
+  txt <- url %>%
+    read_html() %>%
+    html_nodes(xpath = xpath) %>%
+    html_text()
+  
+  # clean the text
+  txt <- str_trim(txt)
+  txt <- txt[-1]
+  txt[txt == ""] <- NA
+  
+  # put the data frame together
+  out <-
+    data_frame(
+      field = txt[1:length(txt) %% 2 == 1],
+      dat   = txt[1:length(txt) %% 2 == 0]
+    ) %>%
+    mutate(
+      field = field %>%
+        str_to_lower() %>%
+        str_replace(":", "") %>%
+        str_replace_all("[[:punct:]]", "") %>%
+        str_replace_all("  ", " ") %>%
+        str_replace_all(" ", "_")
+    ) %>%
+    spread(field, dat) %>%
+    map_df(parse_guess) %>%
+    mutate_at(vars(contains("date")), funs(mdy(.))) %>%
+    mutate_at(vars(contains("zip")), funs(as.character))
+  
+  # be nice to the website!
+  Sys.sleep(4)
+  
+  # return it
+  out
+}
+
+test0 <- job_getter(link, xpath)
+
+# can we get more than one page?
+test1 <- job_getter("https://lcr-pjr.doleta.gov/index.cfm?event=ehLCJRExternal.dspJobOrderView&frm=lcjr&task=view_job_order&view=external&lcjr_id=124004", xpath = xpath)
+test2 <- job_getter("https://lcr-pjr.doleta.gov/index.cfm?event=ehLCJRExternal.dspJobOrderView&frm=lcjr&task=view_job_order&view=external&lcjr_id=123442", xpath = xpath)
+
+done <- bind_rows(test0, test1, test2)
+
+# print the results
+done[1:3, 39:41]
 ```
